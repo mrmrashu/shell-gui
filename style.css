@@ -1,0 +1,10 @@
+headerbar {
+    font-family: Inter, sans-serif;
+    font-size: 14px;
+    font-weight: bold;
+    min-height: 10px; /* Set the desired height */
+}
+
+#close-button {
+    color: red;
+}
