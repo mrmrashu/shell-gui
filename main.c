@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
     gtk_widget_set_name(button, "close-button");
     gtk_style_context_add_class(gtk_widget_get_style_context(textbox), "close-button"); // Add a CSS class to the widget
 
-    gtk_box_pack_start(GTK_BOX(box2), button, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(box2), button, TRUE, TRUE, 0);
 
     g_signal_connect(button, "clicked", G_CALLBACK(on_button_clicked), window);
 
