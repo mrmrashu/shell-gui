@@ -3,6 +3,9 @@
 void on_window_closed(GtkWidget *widget, gpointer data) {
     gtk_main_quit();
 }
+void on_entry_activate(GtkEntry *entry, gpointer data) {
+        g_print("Enter key pressed: %s\n", gtk_entry_get_text(entry));
+}
 
 void on_button_clicked(GtkButton *button, gpointer data)
 {
@@ -32,6 +35,7 @@ int main(int argc, char *argv[]) {
     GtkStyleContext *context = gtk_widget_get_style_context(headerbar);
     gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
 
+
     // Set up the custom CSS class for the GtkEntry widget
     const gchar *class_name = "entry-style";
     GtkStyleContext *context_entry = gtk_widget_get_style_context(window);
@@ -45,22 +49,15 @@ int main(int argc, char *argv[]) {
     GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     gtk_container_add(GTK_CONTAINER(window), box);
 
-    // I/O Container Box
-    GtkWidget *IObox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-    gtk_box_pack_end(GTK_BOX(box), IObox, FALSE, FALSE,0);
-
-    // Submit Command Button
-    submitbutton = gtk_button_new_with_label("Submit");
-    gtk_widget_set_name(submitbutton, "submitbutton");
-    //Submit Button Placement
-    gtk_box_pack_end(GTK_BOX(IObox), submitbutton, FALSE, FALSE,0);
-
     textbox = gtk_entry_new();
     gtk_widget_set_name(textbox, "commandbox");
     gtk_style_context_add_class(gtk_widget_get_style_context(textbox), "commandbox"); // Add a CSS class to the widget
 
     gtk_entry_set_width_chars(GTK_ENTRY(textbox), 30); // Set the width to fit 30 characters
-    gtk_box_pack_end(GTK_BOX(IObox), textbox, TRUE, TRUE, 0);
+    gtk_box_pack_end(GTK_BOX(box), textbox, FALSE, TRUE, 0);
+
+    g_signal_connect(textbox, "activate", G_CALLBACK(on_entry_activate), NULL);
+
 
     GtkWidget *box2 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
     gtk_header_bar_pack_end(GTK_HEADER_BAR(headerbar), box2);
