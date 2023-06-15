@@ -85,13 +85,17 @@ window > box > entry:selected {
     background-color: rgba(219,68,55,.8);
     color: black;
 }
-window > box > label {
-    padding: 10px;
+#scrollwindow {
     margin: 10px;
+    padding-left: 10px;
     border-radius: 1px;
     font-family: "Menlo", monospace;
     background-color: rgba(0, 0, 0, 0.05);
     box-shadow: inset 0 0 1px 1px rgba(0, 0, 0, .1);
+}
+
+#label {
+    padding-bottom: 10px;
 }
 
 @keyframes jumpFocus {
