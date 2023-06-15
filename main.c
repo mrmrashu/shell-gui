@@ -1,3 +1,5 @@
+#include <stdio.h>
+#include <string.h>
 #include <gtk/gtk.h>
 
 void on_window_closed(GtkWidget *widget, gpointer data) {
@@ -5,9 +7,18 @@ void on_window_closed(GtkWidget *widget, gpointer data) {
 }
 
 void on_entry_activate(GtkEntry *entry, gpointer data) {
-    const gchar *text = gtk_entry_get_text(entry);
     GtkLabel *label = GTK_LABEL(data);
-    gtk_label_set_text(label, text);
+    const gchar *text = gtk_entry_get_text(entry); // Text input in textbox
+    const gchar *current_text = gtk_label_get_text(label); // Label's Current Text
+
+    // Concatenate the current command with previous for output on display
+    gchar *new_text = g_strdup_printf("%s\n%s",current_text, text);
+
+    
+    gtk_label_set_text(label, new_text);
+
+    g_free(new_text);
+
     // Clear the text from the entry
     gtk_entry_set_text(GTK_ENTRY(entry), "");
 }
@@ -70,7 +81,7 @@ int main(int argc, char *argv[]) {
 
     // Callback function for Enter detection within textbox
     display = gtk_label_new(NULL);
-    gtk_box_pack_start(GTK_BOX(box), display, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(box), display, TRUE, TRUE, 0);
     
     g_signal_connect(
         textbox,
@@ -78,6 +89,9 @@ int main(int argc, char *argv[]) {
         G_CALLBACK(on_entry_activate),
         display
     );
+
+    gtk_label_set_xalign(GTK_LABEL(display), 0.0);
+    gtk_label_set_yalign(GTK_LABEL(display), 0.0);
 
     // Box Container for close-button in headerbar
     GtkWidget *headerbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
