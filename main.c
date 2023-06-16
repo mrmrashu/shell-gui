@@ -90,7 +90,7 @@ int main(int argc, char *argv[]) {
     gtk_box_pack_start(GTK_BOX(box), scrollWindow, TRUE, TRUE, 0);
 
     // Callback function for Enter detection within textbox
-    display = gtk_label_new(NULL);
+    display = gtk_label_new("Shell from Project Semicolon ~ #Experimental");
     gtk_widget_set_name(display, "label");
 
     // Nesting label to scrolled window
