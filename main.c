@@ -123,7 +123,7 @@ int main(int argc, char *argv[]) {
     g_signal_connect(window, "destroy", G_CALLBACK(on_window_closed), NULL);
 
     // Setting default window size (Note: this line must be kept below the main code to keep it working)
-    gtk_window_set_default_size(GTK_WINDOW(window), 700, 300);
+    gtk_window_set_default_size(GTK_WINDOW(window), 500, 300);
 
     gtk_widget_show_all(window);
 
