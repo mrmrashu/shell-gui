@@ -67,7 +67,7 @@ int main(int argc, char *argv[]) {
 
     /*
         Containership
-        window -> headerbar -> headerbox -> box.end ->
+        window -> headerbar -> headerbox -> box.end -> close-button
         window -> box -> box.end -> entry
     */
 
@@ -89,7 +89,7 @@ int main(int argc, char *argv[]) {
     gtk_scrolled_window_set_max_content_height(GTK_SCROLLED_WINDOW(scrollWindow), 400);
     gtk_box_pack_start(GTK_BOX(box), scrollWindow, TRUE, TRUE, 0);
 
-    // Callback function for Enter detection within textbox
+    
     display = gtk_label_new("Shell from Project Semicolon ~ #Experimental");
     gtk_widget_set_name(display, "label");
 
