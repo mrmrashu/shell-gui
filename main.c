@@ -14,7 +14,10 @@ void on_entry_activate(GtkEntry *entry, gpointer data) {
     // Concatenate the current command with previous for output on display
     gchar *new_text = g_strdup_printf("%s\n%s",current_text, text);
 
+    char *input = (char *)text;
     
+    printf("Input Text : %s\n", input);
+
     gtk_label_set_text(label, new_text);
 
     g_free(new_text);
