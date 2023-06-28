@@ -14,7 +14,10 @@ void on_entry_activate(GtkEntry *entry, gpointer data) {
     // Concatenate the current command with previous for output on display
     gchar *new_text = g_strdup_printf("%s\n%s",current_text, text);
 
+    char *input = (char *)text;
     
+    printf("Input Text : %s\n", input);
+
     gtk_label_set_text(label, new_text);
 
     g_free(new_text);
@@ -67,7 +70,7 @@ int main(int argc, char *argv[]) {
 
     /*
         Containership
-        window -> headerbar -> headerbox -> box.end ->
+        window -> headerbar -> headerbox -> box.end -> close-button
         window -> box -> box.end -> entry
     */
 
@@ -89,7 +92,7 @@ int main(int argc, char *argv[]) {
     gtk_scrolled_window_set_max_content_height(GTK_SCROLLED_WINDOW(scrollWindow), 400);
     gtk_box_pack_start(GTK_BOX(box), scrollWindow, TRUE, TRUE, 0);
 
-    // Callback function for Enter detection within textbox
+    
     display = gtk_label_new("Shell from Project Semicolon ~ #Experimental");
     gtk_widget_set_name(display, "label");
 
@@ -123,7 +126,7 @@ int main(int argc, char *argv[]) {
     g_signal_connect(window, "destroy", G_CALLBACK(on_window_closed), NULL);
 
     // Setting default window size (Note: this line must be kept below the main code to keep it working)
-    gtk_window_set_default_size(GTK_WINDOW(window), 700, 300);
+    gtk_window_set_default_size(GTK_WINDOW(window), 500, 300);
 
     gtk_widget_show_all(window);
 
