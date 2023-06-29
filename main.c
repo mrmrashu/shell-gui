@@ -1,22 +1,107 @@
 #include <stdio.h>
 #include <string.h>
 #include <gtk/gtk.h>
+#include <glib.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <string.h>
+#include "shell.h"
+#include "source.h"
+#include "parser.h"
+#include "executor.h"
+#include "output.h"
+char *output_o = "";
+int parse_and_execute(struct source_s *src)
+{
+    skip_white_spaces(src);
+    struct token_s *tok = tokenize(src);
+    if(tok == &eof_token)
+    {
+        return 0;
+    }
+    while(tok && tok != &eof_token)
+    {
+        struct node_s *cmd = parse_simple_command(tok);
+        if(!cmd)
+        {
+            break;
+        }
+        int status = do_simple_command(cmd,output_o);
+
+        free_node_tree(cmd);
+        tok = tokenize(src);
+    }
+    return 1;
+}
+
+void read_cmd_gui(char *input){
+
+
+    const size_t len_input = strlen(input)+1;
+    char* cmd = malloc(len_input); // A variable to store commands
+        // print_prompt1();
+
+        // cmd = read_cmd();
+
+        // For GUI
+        strncpy(cmd,input,len_input);
+
+        // If there's an error reading the command, we exit the shell
+        if(!cmd){
+            exit(EXIT_SUCCESS);
+        }
+
+        // If the command is empty (i.e. the user pressed ENTER without writing anything, we skip this input and continue with the loop.
+        if (cmd[0]=='\0' || strcmp(cmd,"\n")==0)
+        {
+            free(cmd);
+            return;
+        }
+
+        //  If the command is exit, we exit the shell.
+        if(strcmp(cmd, "exit\n") == 0)
+        {
+            free(cmd);
+            exit(EXIT_SUCCESS);
+            
+        }
+
+        //Otherwise, we echo back the command, free the memory we used to store the command, and continue with the loop. 
+        // printf("%s\n",cmd);
+        struct source_s src;
+        src.buffer   = cmd;
+        src.bufsize  = strlen(cmd);
+        src.curpos   = INIT_SRC_POS;
+        parse_and_execute(&src);
+    
+        free(cmd);
+    // exit(EXIT_SUCCESS);
+}
 
 void on_window_closed(GtkWidget *widget, gpointer data) {
     gtk_main_quit();
 }
 
 void on_entry_activate(GtkEntry *entry, gpointer data) {
+    
     GtkLabel *label = GTK_LABEL(data);
+
     const gchar *text = gtk_entry_get_text(entry); // Text input in textbox
+
+    char *input = (char *)text;
+
+    read_cmd_gui(input);
+
+    printf("OUT _ %s",output_o);
+    // const gchar *current_text = (gchar *)output;
     const gchar *current_text = gtk_label_get_text(label); // Label's Current Text
 
     // Concatenate the current command with previous for output on display
     gchar *new_text = g_strdup_printf("%s\n%s",current_text, text);
-
-    char *input = (char *)text;
     
     printf("Input Text : %s\n", input);
+
 
     gtk_label_set_text(label, new_text);
 
@@ -134,3 +219,5 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
+
+
