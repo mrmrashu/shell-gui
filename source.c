@@ -9,7 +9,7 @@ void unget_char(struct source_s *src)
     if (src->curpos < 0)
     {
         return;
-    }
+    } 
     src->curpos--;
 }
 /*The next_char() function returns the next character of input and updates the source pointer, so that the next call to next_char() returns the following input character. When we reach the last character in input, the function returns the special character EOF, which we defined as -1 in source.h above.

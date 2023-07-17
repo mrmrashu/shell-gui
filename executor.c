@@ -9,10 +9,11 @@
 #include "shell.h"
 #include "node.h"
 #include "output.h"
+
 #define BUFFER_SIZE 1024
 
 
-
+char *output_o = "";
 /* The search_path() function takes the name of a command, then searches the directories listed in the $PATH variable to try and find the command's executable file.
    The $PATH variable contains a comma-separated list of directories, such as /bin:/usr/bin. For each directory, we create a pathname by appending the command name to the directory name,
    then we call stat() to see if a file that exists with the given pathname (for simplicity, we don't check whether the file is actually executable, or whether we have enough permissions to execute it).
@@ -96,7 +97,7 @@ char *search_path(char * file) // here file is executable file we will search th
    we treat it as a pathname and we directly call execv(). Otherwise, we try to locate the command by calling search_path(), which should return the full pathname that we will pass on to execv().
  */
 // Execute command for GUI
-int do_exec_cmd(int argc,char **argv,char *output_o)
+int do_exec_cmd(int argc,char **argv)
 {
 	if (strchr(argv[0],'/')) //searches for the first occurrence of the character '/' (an unsigned char) in the string (argv[0]) and return 1 if found.
 	{
@@ -136,7 +137,7 @@ The function then forks a new child process. In the child process, we execute th
 
 In the parent process, we call waitpid() to wait for our child process to finish execution. We then free the memory we used to store the arguments list and return.
 */
-int do_simple_command(struct node_s *node,char *output_o){
+int do_simple_command(struct node_s *node){
 
 	if(!node){
 		return 0;
@@ -173,34 +174,9 @@ int do_simple_command(struct node_s *node,char *output_o){
 	}
 	argv[argc]= NULL;
 
-	pid_t child_pid = 0;
-	if ((child_pid = fork()) == 0)
-	{
-		do_exec_cmd(argc,argv,output_o);
-		// printf("%s",src->output);
-
-		fprintf(stderr,"error: failed to execute command !!: %s\n",strerror(errno));
-
-		if (errno == ENOEXEC)
-		{
-			exit(126);
-		}
-		else if (errno == ENOENT)
-		{
-			exit(127);
-		}
-		else
-		{
-			exit(EXIT_FAILURE);
-		}
-	}
-	else if (child_pid < 0)
-	{
-		fprintf(stderr,"error: failed to fork command: %s\n",strerror(errno));
-		return 0;
-	}
-	int status = 0;
-	waitpid(child_pid,&status,0);
+  
+	output_o = get_output_cmd(argc,argv);
+	
 	/*
 	The value of pid can be:
 
@@ -209,8 +185,17 @@ int do_simple_command(struct node_s *node,char *output_o){
 0   : Wait for any child process whose process group ID is equal to that of the calling process.
 >0  : Wait for the child whose process ID is equal to the value of pid.
 	*/
-	free_argv(argc,argv);
+	// free_argv(argc,argv);
 
 
 	return 1;
+}
+
+char *output_exe_to_main(char *output){
+
+	output = output_o;
+
+   // printf("output from executor.c: %s\n", output);
+
+	return output;
 }

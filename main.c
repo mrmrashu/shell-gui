@@ -5,13 +5,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
-#include <string.h>
+#include <string.h> 
 #include "shell.h"
 #include "source.h"
 #include "parser.h"
 #include "executor.h"
 #include "output.h"
-char *output_o = "";
+
 int parse_and_execute(struct source_s *src)
 {
     skip_white_spaces(src);
@@ -20,14 +20,17 @@ int parse_and_execute(struct source_s *src)
     {
         return 0;
     }
-    while(tok && tok != &eof_token)
+    while(tok && tok != &eof_token) 
     {
         struct node_s *cmd = parse_simple_command(tok);
         if(!cmd)
         {
             break;
         }
-        int status = do_simple_command(cmd,output_o);
+       
+
+        int status = do_simple_command(cmd);
+
 
         free_node_tree(cmd);
         tok = tokenize(src);
@@ -74,6 +77,7 @@ void read_cmd_gui(char *input){
         src.bufsize  = strlen(cmd);
         src.curpos   = INIT_SRC_POS;
         parse_and_execute(&src);
+
     
         free(cmd);
     // exit(EXIT_SUCCESS);
@@ -91,17 +95,27 @@ void on_entry_activate(GtkEntry *entry, gpointer data) {
 
     char *input = (char *)text;
 
+    char *output = NULL;
     read_cmd_gui(input);
 
-    printf("OUT _ %s",output_o);
+    // printf("OUT _ %s",output_o);
     // const gchar *current_text = (gchar *)output;
     const gchar *current_text = gtk_label_get_text(label); // Label's Current Text
+
+    output = output_exe_to_main(output);
+
+    // printf("Main output : %s\n",output);
+
+    gchar *g_output = (gchar *)output;
+
+    // free(output);
 
     // Concatenate the current command with previous for output on display
     gchar *new_text = g_strdup_printf("%s\n%s",current_text, text);
     
-    printf("Input Text : %s\n", input);
-
+    // printf("Input Text : %s\n", input);
+    new_text = g_strdup_printf("%s\n%s",new_text, g_output);
+    
 
     gtk_label_set_text(label, new_text);
 

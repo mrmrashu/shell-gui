@@ -6,7 +6,7 @@
 #include "source.h"
 #include "executor.h"
 
-char *get_output_cmd(int argc,char **argv,char *);
+char *get_output_cmd(int argc,char **argv);
 
 
 
