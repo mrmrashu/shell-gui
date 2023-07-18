@@ -8,10 +8,18 @@
 #include "shell.h"
 #include "node.h"
 #include <errno.h>
+#include <signal.h>
 
 
+#define SIG_ERROR_SIGNAL SIGUSR1
 
 #define BUFFER_SIZE 1024
+
+void handle_error(int signum, siginfo_t *info, void *context) {
+    // Get the error message from the signal info
+    const char *error_message = (const char *)info->si_ptr;
+    // Send the error message to main.c for printing in the GUI
+}
 
 static inline void free_argv(int argc , char **argv)
 {
@@ -66,7 +74,29 @@ char *get_output_cmd(int argc, char **argv)
         // printf("test 3\n");
         flag = do_exec_cmd(argc,argv);
 
-        fprintf(stderr,"error: failed to execute <<>> command !!: %s\n",strerror(errno));
+        // Install the signal handler for the error signal
+        struct sigaction sa;
+        sa.sa_flags = SA_SIGINFO;
+        sa.sa_sigaction = handle_error;
+        sigemptyset(&sa.sa_mask);
+        sigaction(SIG_ERROR_SIGNAL, &sa, NULL);
+
+        // Trigger an error and send the error signal
+        // Remove the previous declaration of `error_message` if exists
+        char* error_message = NULL;
+        
+        // Get the length of the error message
+        int error_message_length = snprintf(NULL, 0, "error: failed to execute <<>> command !!: %s\n", strerror(errno));
+
+        // Allocate memory for `error_message`
+        error_message = malloc((error_message_length + 1) * sizeof(char));
+
+        // Check if memory allocation was successful
+        if (error_message != NULL) {
+            // Use `sprintf` to print the error message into `error_message`
+            sprintf(error_message, "error: failed to execute <<>> command !!: %s\n", strerror(errno));
+        }
+        
 
         if (errno == ENOEXEC)
         {

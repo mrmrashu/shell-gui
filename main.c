@@ -5,12 +5,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
-#include <string.h> 
+#include <string.h>
+#include <signal.h> 
 #include "shell.h"
 #include "source.h"
 #include "parser.h"
 #include "executor.h"
 #include "output.h"
+
+#define SIG_ERROR_SIGNAL SIGUSR1
+
 
 int parse_and_execute(struct source_s *src)
 {
@@ -20,7 +24,7 @@ int parse_and_execute(struct source_s *src)
     {
         return 0;
     }
-    while(tok && tok != &eof_token) 
+    while(tok && tok != &eof_token)
     {
         struct node_s *cmd = parse_simple_command(tok);
         if(!cmd)
@@ -87,11 +91,33 @@ void on_window_closed(GtkWidget *widget, gpointer data) {
     gtk_main_quit();
 }
 
+// Global variable to store the error message
+char* error_message = NULL;
+
+// Signal handler for recieving the error message
+void handle_error_message(int signum, siginfo_t *info, void *context) {
+    // Get the error message from the signal info
+    error_message = strdup((const char *) info->si_ptr);
+}
+
 void on_entry_activate(GtkEntry *entry, gpointer data) {
     
     GtkLabel *label = GTK_LABEL(data);
 
     const gchar *text = gtk_entry_get_text(entry); // Text input in textbox
+
+    // Check if there's an error message
+    if (error_message != NULL) {
+        // Update the label with the error message
+        const gchar *current_text = gtk_label_get_text(label);
+        gchar *new_text = g_strdup_printf("%s\n%s\n%s", current_text, text, error_message);
+        gtk_label_set_text(label, new_text);
+        g_free(new_text);
+
+        // Free the error message memory
+        free(error_message);
+        error_message = NULL;
+    }
 
     char *input = (char *)text;
 
@@ -228,6 +254,13 @@ int main(int argc, char *argv[]) {
     gtk_window_set_default_size(GTK_WINDOW(window), 500, 300);
 
     gtk_widget_show_all(window);
+
+    // Installing the signal handler for recieving the error message
+    struct sigaction sa;
+    sa.sa_flags = SA_SIGINFO;
+    sa.sa_sigaction = handle_error_message;
+    sigemptyset(&sa.sa_mask);
+    sigaction(SIG_ERROR_SIGNAL, &sa, NULL);
 
     gtk_main();
 
