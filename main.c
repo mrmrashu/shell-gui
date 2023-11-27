@@ -12,114 +12,42 @@
 #include "executor.h"
 #include "output.h"
 
-int parse_and_execute(struct source_s *src)
-{
-    skip_white_spaces(src);
-    struct token_s *tok = tokenize(src);
-    if(tok == &eof_token)
-    {
-        return 0;
-    }
-    while(tok && tok != &eof_token) 
-    {
-        struct node_s *cmd = parse_simple_command(tok);
-        if(!cmd)
-        {
-            break;
-        }
-       
-
-        int status = do_simple_command(cmd);
-
-
-        free_node_tree(cmd);
-        tok = tokenize(src);
-    }
-    return 1;
-}
-
-void read_cmd_gui(char *input){
-
-
-    const size_t len_input = strlen(input)+1;
-    char* cmd = malloc(len_input); // A variable to store commands
-        // print_prompt1();
-
-        // cmd = read_cmd();
-
-        // For GUI
-        strncpy(cmd,input,len_input);
-
-        // If there's an error reading the command, we exit the shell
-        if(!cmd){
-            exit(EXIT_SUCCESS);
-        }
-
-        // If the command is empty (i.e. the user pressed ENTER without writing anything, we skip this input and continue with the loop.
-        if (cmd[0]=='\0' || strcmp(cmd,"\n")==0)
-        {
-            free(cmd);
-            return;
-        }
-
-        //  If the command is exit, we exit the shell.
-        if(strcmp(cmd, "exit\n") == 0)
-        {
-            free(cmd);
-            exit(EXIT_SUCCESS);
-            
-        }
-
-        //Otherwise, we echo back the command, free the memory we used to store the command, and continue with the loop. 
-        // printf("%s\n",cmd);
-        struct source_s src;
-        src.buffer   = cmd;
-        src.bufsize  = strlen(cmd);
-        src.curpos   = INIT_SRC_POS;
-        parse_and_execute(&src);
-
-    
-        free(cmd);
-    // exit(EXIT_SUCCESS);
-}
 
 void on_window_closed(GtkWidget *widget, gpointer data) {
     gtk_main_quit();
 }
+// Function to append text with a specific style to the GtkTextBuffer
+void append_text_with_style(GtkTextBuffer *buffer, const gchar *text, const gchar *style) {
+    GtkTextIter iter;
+    gtk_text_buffer_get_end_iter(buffer, &iter);
 
+    // Apply the given style to the text
+    gtk_text_buffer_insert_with_tags_by_name(buffer, &iter, text, -1, style, NULL);
+}
 void on_entry_activate(GtkEntry *entry, gpointer data) {
-    
-    GtkLabel *label = GTK_LABEL(data);
+    GtkTextView *text_view = GTK_TEXT_VIEW(data);
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer(text_view);
 
     const gchar *text = gtk_entry_get_text(entry); // Text input in textbox
-
     char *input = (char *)text;
 
     char *output = NULL;
     read_cmd_gui(input);
 
-    // printf("OUT _ %s",output_o);
-    // const gchar *current_text = (gchar *)output;
-    const gchar *current_text = gtk_label_get_text(label); // Label's Current Text
-
     output = output_exe_to_main(output);
 
-    // printf("Main output : %s\n",output);
+    // Append the command in default style
+    append_text_with_style(buffer, "\n", "default");
+    append_text_with_style(buffer, text, "command");
 
-    gchar *g_output = (gchar *)output;
-
-    // free(output);
-
-    // Concatenate the current command with previous for output on display
-    gchar *new_text = g_strdup_printf("%s\n%s",current_text, text);
-    
-    // printf("Input Text : %s\n", input);
-    new_text = g_strdup_printf("%s\n%s",new_text, g_output);
-    
-
-    gtk_label_set_text(label, new_text);
-
-    g_free(new_text);
+    // Append the output with color coding
+    if (strstr(output, "error") != NULL) {
+        append_text_with_style(buffer, "\n", "default");
+        append_text_with_style(buffer, output, "error");
+    } else {
+        append_text_with_style(buffer, "\n", "default");
+        append_text_with_style(buffer, output, "output");
+    }
 
     // Clear the text from the entry
     gtk_entry_set_text(GTK_ENTRY(entry), "");
@@ -145,7 +73,7 @@ int main(int argc, char *argv[]) {
     // Main Window (Entry)
     GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(window), "Shell 0.1 ~ Project Semicolon");
-
+  
     // Headerbar
     headerbar = gtk_header_bar_new();
     gtk_header_bar_set_title(GTK_HEADER_BAR(headerbar), "Shell 0.1 ~ Project Semicolon");
@@ -197,7 +125,18 @@ int main(int argc, char *argv[]) {
 
     // Nesting label to scrolled window
     gtk_container_add(GTK_CONTAINER(scrollWindow), display);
-    
+    display = gtk_text_view_new();
+    gtk_widget_set_name(display, "text-view");
+    gtk_text_view_set_editable(GTK_TEXT_VIEW(display), FALSE); // Make it non-editable
+
+    // Create a text buffer for the text view
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(display));
+
+    // Set up tags for different text styles (colors)
+    gtk_text_buffer_create_tag(buffer, "default", "foreground", "black", NULL);
+    gtk_text_buffer_create_tag(buffer, "command", "foreground", "blue", NULL);
+    gtk_text_buffer_create_tag(buffer, "output", "foreground", "green", NULL);
+    gtk_text_buffer_create_tag(buffer, "error", "foreground", "red", NULL);
     g_signal_connect(
         textbox,
         "activate",
@@ -205,8 +144,9 @@ int main(int argc, char *argv[]) {
         display
     );
 
-    gtk_label_set_xalign(GTK_LABEL(display), 0.0);
-    gtk_label_set_yalign(GTK_LABEL(display), 0.0);
+    buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(display));
+    gtk_text_view_set_left_margin(GTK_TEXT_VIEW(display), 5); // Adjust margin as needed
+
 
     // Box Container for close-button in headerbar
     GtkWidget *headerbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
