@@ -16,38 +16,40 @@
 void on_window_closed(GtkWidget *widget, gpointer data) {
     gtk_main_quit();
 }
-// Function to append text with a specific style to the GtkTextBuffer
-void append_text_with_style(GtkTextBuffer *buffer, const gchar *text, const gchar *style) {
-    GtkTextIter iter;
-    gtk_text_buffer_get_end_iter(buffer, &iter);
 
-    // Apply the given style to the text
-    gtk_text_buffer_insert_with_tags_by_name(buffer, &iter, text, -1, style, NULL);
-}
 void on_entry_activate(GtkEntry *entry, gpointer data) {
-    GtkTextView *text_view = GTK_TEXT_VIEW(data);
-    GtkTextBuffer *buffer = gtk_text_view_get_buffer(text_view);
+    
+    GtkLabel *label = GTK_LABEL(data);
 
     const gchar *text = gtk_entry_get_text(entry); // Text input in textbox
+
     char *input = (char *)text;
 
     char *output = NULL;
     read_cmd_gui(input);
 
+    // printf("OUT _ %s",output_o);
+    // const gchar *current_text = (gchar *)output;
+    const gchar *current_text = gtk_label_get_text(label); // Label's Current Text
+
     output = output_exe_to_main(output);
 
-    // Append the command in default style
-    append_text_with_style(buffer, "\n", "default");
-    append_text_with_style(buffer, text, "command");
+    // printf("Main output : %s\n",output);
 
-    // Append the output with color coding
-    if (strstr(output, "error") != NULL) {
-        append_text_with_style(buffer, "\n", "default");
-        append_text_with_style(buffer, output, "error");
-    } else {
-        append_text_with_style(buffer, "\n", "default");
-        append_text_with_style(buffer, output, "output");
-    }
+    gchar *g_output = (gchar *)output;
+
+    // free(output);
+
+    // Concatenate the current command with previous for output on display
+    gchar *new_text = g_strdup_printf("%s\n%s",current_text, text);
+    
+    // printf("Input Text : %s\n", input);
+    new_text = g_strdup_printf("%s\n%s",new_text, g_output);
+    
+
+    gtk_label_set_text(label, new_text);
+
+    g_free(new_text);
 
     // Clear the text from the entry
     gtk_entry_set_text(GTK_ENTRY(entry), "");
@@ -125,18 +127,7 @@ int main(int argc, char *argv[]) {
 
     // Nesting label to scrolled window
     gtk_container_add(GTK_CONTAINER(scrollWindow), display);
-    display = gtk_text_view_new();
-    gtk_widget_set_name(display, "text-view");
-    gtk_text_view_set_editable(GTK_TEXT_VIEW(display), FALSE); // Make it non-editable
-
-    // Create a text buffer for the text view
-    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(display));
-
-    // Set up tags for different text styles (colors)
-    gtk_text_buffer_create_tag(buffer, "default", "foreground", "black", NULL);
-    gtk_text_buffer_create_tag(buffer, "command", "foreground", "blue", NULL);
-    gtk_text_buffer_create_tag(buffer, "output", "foreground", "green", NULL);
-    gtk_text_buffer_create_tag(buffer, "error", "foreground", "red", NULL);
+    
     g_signal_connect(
         textbox,
         "activate",
@@ -144,9 +135,8 @@ int main(int argc, char *argv[]) {
         display
     );
 
-    buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(display));
-    gtk_text_view_set_left_margin(GTK_TEXT_VIEW(display), 5); // Adjust margin as needed
-
+    gtk_label_set_xalign(GTK_LABEL(display), 0.0);
+    gtk_label_set_yalign(GTK_LABEL(display), 0.0);
 
     // Box Container for close-button in headerbar
     GtkWidget *headerbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
