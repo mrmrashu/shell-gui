@@ -53,7 +53,7 @@ static void run_interactive_command(const char *command) {
         close(stderr_pipe[1]);
 
         // Execute the command
-        execl("/home/naman/projects/myShell/shell", "shell", "-c", command, NULL);
+        execl("/bin/sh", "sh", "-c", command, NULL);
         perror("execl");
         exit(EXIT_FAILURE);
     } else {
