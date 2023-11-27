@@ -117,7 +117,7 @@ int main(int argc, char *argv[]) {
     gtk_widget_set_name(scrollWindow, "scrollwindow");
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrollWindow), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 
-    // Making the Diaply Element show scrollbar when it grows larger than 400px
+    // Making the Disply Element show scrollbar when it grows larger than 400px
     gtk_scrolled_window_set_max_content_height(GTK_SCROLLED_WINDOW(scrollWindow), 400);
     gtk_box_pack_start(GTK_BOX(box), scrollWindow, TRUE, TRUE, 0);
 
@@ -145,7 +145,7 @@ int main(int argc, char *argv[]) {
     // Exit Session Button
     button = gtk_button_new_with_label("");
     gtk_widget_set_name(button, "close-button");
-    gtk_style_context_add_class(gtk_widget_get_style_context(textbox), "close-button"); // close-button widget class
+    gtk_style_context_add_class(gtk_widget_get_style_context(button), "close-button"); // close-button widget class
 
     gtk_box_pack_start(GTK_BOX(headerbox), button, TRUE, TRUE, 0);
 

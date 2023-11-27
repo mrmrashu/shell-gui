@@ -13,9 +13,10 @@ headerbar {
     font-family: "Inter", "Liberation Sans", sans-serif;
     font-size: 14px;
     padding: 0 5px;
-    font-weight: normal;
+    font-weight: 500;
     min-height: 10px;
 }
+
 
 headerbar button {
   font-size: 0;
@@ -95,7 +96,7 @@ window > box > entry:selected {
 
 #label {
     color: black;
-    font-family: "Ubuntu Mono", "Menlo", monospace;
+    font-family: "Menlo","Ubuntu Mono", monospace;
     font-size: 14px;
     letter-spacing: 1px;
     padding: 10px;
