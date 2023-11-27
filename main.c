@@ -12,76 +12,6 @@
 #include "executor.h"
 #include "output.h"
 
-int parse_and_execute(struct source_s *src)
-{
-    skip_white_spaces(src);
-    struct token_s *tok = tokenize(src);
-    if(tok == &eof_token)
-    {
-        return 0;
-    }
-    while(tok && tok != &eof_token) 
-    {
-        struct node_s *cmd = parse_simple_command(tok);
-        if(!cmd)
-        {
-            break;
-        }
-       
-
-        int status = do_simple_command(cmd);
-
-
-        free_node_tree(cmd);
-        tok = tokenize(src);
-    }
-    return 1;
-}
-
-void read_cmd_gui(char *input){
-
-
-    const size_t len_input = strlen(input)+1;
-    char* cmd = malloc(len_input); // A variable to store commands
-        // print_prompt1();
-
-        // cmd = read_cmd();
-
-        // For GUI
-        strncpy(cmd,input,len_input);
-
-        // If there's an error reading the command, we exit the shell
-        if(!cmd){
-            exit(EXIT_SUCCESS);
-        }
-
-        // If the command is empty (i.e. the user pressed ENTER without writing anything, we skip this input and continue with the loop.
-        if (cmd[0]=='\0' || strcmp(cmd,"\n")==0)
-        {
-            free(cmd);
-            return;
-        }
-
-        //  If the command is exit, we exit the shell.
-        if(strcmp(cmd, "exit\n") == 0)
-        {
-            free(cmd);
-            exit(EXIT_SUCCESS);
-            
-        }
-
-        //Otherwise, we echo back the command, free the memory we used to store the command, and continue with the loop. 
-        // printf("%s\n",cmd);
-        struct source_s src;
-        src.buffer   = cmd;
-        src.bufsize  = strlen(cmd);
-        src.curpos   = INIT_SRC_POS;
-        parse_and_execute(&src);
-
-    
-        free(cmd);
-    // exit(EXIT_SUCCESS);
-}
 
 void on_window_closed(GtkWidget *widget, gpointer data) {
     gtk_main_quit();
@@ -145,7 +75,7 @@ int main(int argc, char *argv[]) {
     // Main Window (Entry)
     GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(window), "Shell 0.1 ~ Project Semicolon");
-
+  
     // Headerbar
     headerbar = gtk_header_bar_new();
     gtk_header_bar_set_title(GTK_HEADER_BAR(headerbar), "Shell 0.1 ~ Project Semicolon");
