@@ -10,9 +10,30 @@
 
 static GtkWidget *text_view;
 static GtkWidget *command_entry;
+static GtkWidget *Std_input;
 static GtkTextBuffer *text_buffer;
 static GtkTextTag *tag_stdout;
 static GtkTextTag *tag_stderr;
+const char * stdin_input = "";
+
+static GtkWidget *label;
+
+static void update_directory(const char *directory) {
+    //const char *directory = gtk_entry_get_text(entry);
+
+    if (chdir(directory) != 0) {
+        perror("chdir");
+        // Handle error: display an error message, etc.
+    } else {
+        char cwd[1024];
+        if (getcwd(cwd, sizeof(cwd)) != NULL) {
+            gtk_label_set_text(GTK_LABEL(label), cwd);
+        } else {
+            perror("getcwd");
+            // Handle error: display an error message, etc.
+        }
+    }
+}
 
 static void append_text(const char *text, GtkTextTag *tag) {
     GtkTextIter iter;
@@ -33,11 +54,23 @@ void on_button_clicked(GtkButton *button, gpointer data)
 static void run_interactive_command(const char *command) {
     FILE *fp;
 
-    // Create pipes for stdin, stdout, and stderr
-    int stdin_pipe[2];
+    // Create a temporary file for stdin
+    char temp_filename[] = "/tmp/stdin_tempfile_XXXXXX";
+    int stdin_temp_fd = mkstemp(temp_filename);
+
+    if (stdin_temp_fd == -1) {
+        perror("mkstemp");
+        return;
+    }
+
+    // Write stdin_input to the temporary file
+    write(stdin_temp_fd, stdin_input, strlen(stdin_input)+1);
+    close(stdin_temp_fd);
+
+    // Create pipes for stdout and stderr
     int stdout_pipe[2];
     int stderr_pipe[2];
-    if (pipe(stdin_pipe) == -1 || pipe(stdout_pipe) == -1 || pipe(stderr_pipe) == -1) {
+    if (pipe(stdout_pipe) == -1 || pipe(stderr_pipe) == -1) {
         perror("pipe");
         return;
     }
@@ -51,33 +84,24 @@ static void run_interactive_command(const char *command) {
 
     if (pid == 0) {
         // Child process
-        close(stdin_pipe[1]);
-        close(stdout_pipe[0]);
-        close(stderr_pipe[0]);
-
-        // Redirect stdin, stdout, and stderr
-        dup2(stdin_pipe[0], 0);
+        // Redirect stdout and stderr
         dup2(stdout_pipe[1], 1);
         dup2(stderr_pipe[1], 2);
 
         // Close unused pipe ends
-        close(stdin_pipe[0]);
+        close(stdout_pipe[0]);
         close(stdout_pipe[1]);
+        close(stderr_pipe[0]);
         close(stderr_pipe[1]);
 
-        // Execute the command
-        execl("/bin/sh", "sh", "-c", command, NULL);
+        // Execute the command with stdin redirected from the temporary file
+        execl("/bin/sh", "sh", "-c", command, "<", temp_filename, NULL);
         perror("execl");
         exit(EXIT_FAILURE);
     } else {
         // Parent process
-        close(stdin_pipe[0]);
         close(stdout_pipe[1]);
         close(stderr_pipe[1]);
-
-        // Write the command to the child process
-        write(stdin_pipe[1], command, strlen(command));
-        close(stdin_pipe[1]);
 
         // Read the output and errors from the child process and append them to the text view
         char buffer[128];
@@ -96,15 +120,35 @@ static void run_interactive_command(const char *command) {
 
         close(stdout_pipe[0]);
         close(stderr_pipe[0]);
-        waitpid(pid, NULL, 0);  // Wait for the child process to finish
+
+        // Wait for the child process to finish
+        waitpid(pid, NULL, 0);
+
+        // Clean up the temporary file
+        unlink(temp_filename);
     }
 }
 
+
 static void on_run_command_button_clicked(GtkWidget *widget, gpointer data) {
     const char *command = gtk_entry_get_text(GTK_ENTRY(command_entry));
-    run_interactive_command(command);
+    if (command[0] == 'c' && command[1] == 'd' && command[2] == ' ')
+    {
+        update_directory(&command[3]);
+    }
+    else
+    {
+        run_interactive_command(command);
+    }
     gtk_entry_set_text(GTK_ENTRY(command_entry), "");  // Clear the command entry
 }
+static void on_stdin_command_button_clicked(GtkWidget *widget, gpointer data) {
+    stdin_input = gtk_entry_get_text(GTK_ENTRY(Std_input));
+    printf("IN = %s",stdin_input);
+    //run_interactive_command(stdin);
+    gtk_entry_set_text(GTK_ENTRY(Std_input), "");  // Clear the command entry
+}
+
 
 static void on_command_entry_activate(GtkEntry *entry, gpointer user_data) {
     // Called when Enter key is pressed in the command entry
@@ -162,6 +206,7 @@ int main(int argc, char *argv[]) {
     GtkWidget *scrolled_window = gtk_scrolled_window_new(NULL, NULL);
     
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+    label = gtk_label_new(" ");
     
     // Nesting Text View inside Scrolled Window
     gtk_container_add
@@ -170,6 +215,12 @@ int main(int argc, char *argv[]) {
             text_view
         );
 
+
+    Std_input = gtk_entry_new();
+    gtk_entry_set_placeholder_text
+        (GTK_ENTRY(Std_input),
+            "Enter Input..."
+        );
     // Input Textbox for Commands
     command_entry = gtk_entry_new();
     gtk_entry_set_placeholder_text
@@ -182,6 +233,7 @@ int main(int argc, char *argv[]) {
 
     text_buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
 
+
     // Create tags for different text styles
     tag_stdout = gtk_text_buffer_create_tag(text_buffer, "stdout", "foreground", "blue", "left_margin", 10, NULL);
     tag_stderr = gtk_text_buffer_create_tag(text_buffer, "stderr", "foreground", "red", "left_margin", 10, NULL);
@@ -190,11 +242,14 @@ int main(int argc, char *argv[]) {
 
     // Connect the activate signal to the callback for Enter key presses
     g_signal_connect(command_entry, "activate", G_CALLBACK(on_command_entry_activate), NULL);
+    g_signal_connect(Std_input, "activate", G_CALLBACK(on_stdin_command_button_clicked), NULL);
+
 
     GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
 
     // Add the command entry to the box
     gtk_box_pack_start(GTK_BOX(box), scrolled_window, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(box), Std_input, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(box), command_entry, FALSE, FALSE, 0);
 
     // Add the scrolled window to the box, expanding to fill available space
