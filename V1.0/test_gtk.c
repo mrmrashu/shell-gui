@@ -26,8 +26,6 @@ static void update_label(const char *text) {
     gtk_label_set_text(GTK_LABEL(label), text);
 }
 
-
-
 static void update_directory(const char *directory) {
     if (chdir(directory) != 0) {
         perror("chdir");
@@ -259,6 +257,7 @@ int main(int argc, char *argv[]) {
     char cwd[1024];
     getcwd(cwd, sizeof(cwd));
     label = gtk_label_new(cwd);
+    gtk_widget_set_name(label, "cwd_label");
     
     // Nesting Text View inside Scrolled Window
     gtk_container_add
@@ -306,6 +305,7 @@ int main(int argc, char *argv[]) {
 
      // Create a new horizontal box for labels
     GtkWidget *labels_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
+    gtk_widget_set_name(labels_box, "labels_box");
 
     // Add the original label to the labels box
     gtk_box_pack_start(GTK_BOX(labels_box), label, FALSE, FALSE, 0);

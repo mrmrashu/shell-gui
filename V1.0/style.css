@@ -78,7 +78,7 @@ window > box > entry {
 }
 window > box > entry {
     border-radius: 0;
-    padding: 0 10px;
+    padding: 5px 10px;
     font-weight: normal;
     color: rgba(0, 0, 0, .7);
     box-shadow: inset 0 1px 2px rgba(0,0,0,.1), 0 0 0 1px rgba(0,0,0,.2);
@@ -95,11 +95,23 @@ window > box > entry:selected {
 }
 
 #label {
-    color: black;
-    font-family: "Menlo","Ubuntu Mono", monospace;
+    font-family: "Menlo", monospace;
     font-size: 14px;
+    background: white;
     letter-spacing: 1px;
     padding: 10px;
+}
+
+#labels_box {
+    background: transparent;
+    margin: 3px 10px;
+}
+
+#username-label, #root-username-label, #cwd_label {
+    padding: 5px 10px;
+    background: rgba(0,0,0,.16);
+    font-family: Menlo, monospace;
+    border-radius: 3px;
 }
 
 @keyframes jumpFocus {
