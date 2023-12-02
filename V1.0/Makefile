@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = `pkg-config --cflags gtk+-3.0`
-APP = test_gtk
+APP = main_gtk
 LIBS = `pkg-config --libs gtk+-3.0`
 
 ${APP}: ${APP}.c

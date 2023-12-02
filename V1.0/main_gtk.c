@@ -1,4 +1,7 @@
 // To run in Debugging Mode, run via : GTK_DEBUG=interactive ./test_gtk
+// To Check memory leaks run via :  valgrind --leak-check=full --show-leak-kinds=all ./test_gtk
+// run via debugger : gdb ./test_gtk
+
 // Last edited by Ashu Sharma
 
 #include <gtk/gtk.h>
@@ -19,7 +22,6 @@ static GtkTextTag *tag_stdout;
 static GtkTextTag *tag_stderr;
 static GtkWidget *username_label;
 
-const char * stdin_input = "";
 
 // Function to update the label
 static void update_label(const char *text) {
@@ -75,19 +77,59 @@ void on_button_clicked(GtkButton *button, gpointer data)
     gtk_window_close(GTK_WINDOW(window));
 }
 
+
+static void set_non_blocking(int fd) {
+    int flags = fcntl(fd, F_GETFL, 0);
+    if (flags != -1) {
+        fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+    }
+}
+
+
     
-
-static void run_interactive_command(const char *command, const char *stdin_text) {
+void take_input_from_stdin(GtkWidget *stdin_entry) {
+    const char *stdin_text = gtk_entry_get_text(GTK_ENTRY(stdin_entry));
     int stdin_pipe[2];
-    int stdout_pipe[2];
-    int stderr_pipe[2];
 
-    if (pipe(stdin_pipe) == -1 || pipe(stdout_pipe) == -1 || pipe(stderr_pipe) == -1) {
+    if (pipe(stdin_pipe) == -1) {
         perror("pipe");
         return;
     }
 
+    // Redirect stdin,
+    dup2(stdin_pipe[0], 0);
+    close(stdin_pipe[0]);
+
+    // Write stdin_text to the child process
+    dprintf(stdin_pipe[1], "%s\n", stdin_text);
+    close(stdin_pipe[1]);
+}
+
+
+
+
+
+// ...
+
+static void run_interactive_command(const char *command) {
+    int stdout_pipe[2];
+    int stderr_pipe[2];
+
+    if (pipe(stdout_pipe) == -1 || pipe(stderr_pipe) == -1) {
+        perror("pipe");
+        return;
+    }
+
+    // Set stdout and stderr pipes to non-blocking mode
+    set_non_blocking(stdout_pipe[0]);
+    set_non_blocking(stderr_pipe[0]);
+
+    // Add the following debug print statement before the fork in run_interactive_command
+    printf("Before fork: stdin_entry text: %s\n", gtk_entry_get_text(GTK_ENTRY(stdin_entry)));
+
     pid_t pid = fork();
+
+    printf("After fork, pid: %d\n", pid);
 
     if (pid == -1) {
         perror("fork");
@@ -95,48 +137,84 @@ static void run_interactive_command(const char *command, const char *stdin_text)
     }
 
     if (pid == 0) {
+        printf("Child process started\n");
         // Child process
-        // Redirect stdin, stdout, and stderr
-        dup2(stdin_pipe[0], 0);
+        // Redirect stdout and stderr
         dup2(stdout_pipe[1], 1);
         dup2(stderr_pipe[1], 2);
 
         // Close unused pipe ends
-        close(stdin_pipe[0]);
-        close(stdin_pipe[1]);
         close(stdout_pipe[0]);
         close(stdout_pipe[1]);
         close(stderr_pipe[0]);
         close(stderr_pipe[1]);
 
+        // Redirect standard input from stdin_entry
+        take_input_from_stdin(stdin_entry);
+
         // Execute the command
-        execl("/bin/sh", "sh", "-c", command, NULL);
+        execl("/bin/bash", "bash", "-c", command, NULL);
 
         perror("execl");
         exit(EXIT_FAILURE);
     } else {
+        printf("After fork, Parent process\n");
+
         // Parent process
-        close(stdin_pipe[0]);
         close(stdout_pipe[1]);
         close(stderr_pipe[1]);
 
-        // Write stdin_text to the child process
-        dprintf(stdin_pipe[1], "%s\n", stdin_text);
-        close(stdin_pipe[1]);
+        // Set stdout and stderr pipes to non-blocking mode in the parent process
+        set_non_blocking(stdout_pipe[0]);
+        set_non_blocking(stderr_pipe[0]);
+
+        // Create file descriptors set for select
+        fd_set read_fds;
+        FD_ZERO(&read_fds);
+        FD_SET(stdout_pipe[0], &read_fds);
+        FD_SET(stderr_pipe[0], &read_fds);
 
         char buffer[128];
         ssize_t bytesRead;
+        int stdout_eof = 0;
+        int stderr_eof = 0;
 
-        // Read output from the child process
-        while ((bytesRead = read(stdout_pipe[0], buffer, sizeof(buffer))) > 0) {
-            buffer[bytesRead] = '\0';
-            append_text(buffer, tag_stdout);
-        }
+        while (!stdout_eof || !stderr_eof) {
+            // Wait for data to be available on stdout or stderr
+            if (select(stderr_pipe[0] + 1, &read_fds, NULL, NULL, NULL) == -1) {
+                perror("select");
+                break;
+            }
 
-        // Read errors from the child process
-        while ((bytesRead = read(stderr_pipe[0], buffer, sizeof(buffer))) > 0) {
-            buffer[bytesRead] = '\0';
-            append_text(buffer, tag_stderr);
+            // Read output from the child process
+            if (FD_ISSET(stdout_pipe[0], &read_fds)) {
+                bytesRead = read(stdout_pipe[0], buffer, sizeof(buffer));
+                if (bytesRead > 0) {
+                    buffer[bytesRead] = '\0';
+                    append_text(buffer, tag_stdout);
+                } else if (bytesRead == 0) {
+                    stdout_eof = 1;
+                }
+            }
+
+            // Read errors from the child process
+            if (FD_ISSET(stderr_pipe[0], &read_fds)) {
+                bytesRead = read(stderr_pipe[0], buffer, sizeof(buffer));
+                if (bytesRead > 0) {
+                    buffer[bytesRead] = '\0';
+                    append_text(buffer, tag_stderr);
+                } else if (bytesRead == 0) {
+                    stderr_eof = 1;
+                }
+            }
+
+            // Allow some time for GUI events
+            usleep(10000);  // 10 milliseconds
+
+            // Update the file descriptors set for the next iteration
+            FD_ZERO(&read_fds);
+            FD_SET(stdout_pipe[0], &read_fds);
+            FD_SET(stderr_pipe[0], &read_fds);
         }
 
         close(stdout_pipe[0]);
@@ -147,9 +225,11 @@ static void run_interactive_command(const char *command, const char *stdin_text)
     }
 }
 
+// ...
+
+
 static void on_run_command_button_clicked(GtkWidget *widget, gpointer data) {
     const char *command = gtk_entry_get_text(GTK_ENTRY(command_entry));
-    const char *stdin_text = gtk_entry_get_text(GTK_ENTRY(stdin_entry));
 
     // Display the entered command in the scrolled window with black foreground color
     append_text(command, NULL);
@@ -157,26 +237,34 @@ static void on_run_command_button_clicked(GtkWidget *widget, gpointer data) {
     if (command[0] == 'c' && command[1] == 'd' && command[2] == ' ') {
         update_directory(&command[3]);
     } else {
-        run_interactive_command(command, stdin_text);
+        // Clear the text view before running a new command
+        //gtk_text_buffer_set_text(text_buffer, "", -1);
+        run_interactive_command(command);
     }
 
     gtk_entry_set_text(GTK_ENTRY(command_entry), "");  // Clear the command entry
-    gtk_entry_set_text(GTK_ENTRY(stdin_entry), "");    // Clear the stdin entry
 }
     
-// static void on_stdin_command_button_clicked(GtkWidget *widget, gpointer data) {
-//     stdin_input = gtk_entry_get_text(GTK_ENTRY(Std_input));
-//     printf("IN = %s",stdin_input);
-//     //run_interactive_command(stdin);
-//     gtk_entry_set_text(GTK_ENTRY(Std_input), "");  // Clear the command entry
-// }
+static void on_stdin_command_button_clicked(GtkWidget *widget, gpointer data) {
+    // Called when Enter key is pressed in the stdin entry
+    //const char *stdin_text = gtk_entry_get_text(GTK_ENTRY(stdin_entry));
+    
+    // Redirect standard input from stdin_entry
+    take_input_from_stdin(stdin_entry);
+
+    gtk_entry_set_text(GTK_ENTRY(stdin_entry), "");  // Clear the stdin entry
+   
+}
 
 
 static void on_command_entry_activate(GtkEntry *entry, gpointer user_data) {
     // Called when Enter key is pressed in the command entry
     on_run_command_button_clicked(NULL, NULL);
 }
-
+static void on_stdin_button_activate(GtkEntry *entry, gpointer user_data){
+    // Called when Enter key is pressed in the stdin entry
+    on_stdin_command_button_clicked(NULL, NULL);
+}
 
 int main(int argc, char *argv[]) {
     gtk_init(&argc, &argv);
@@ -216,9 +304,9 @@ int main(int argc, char *argv[]) {
     gtk_css_provider_load_from_path
         (
             provider,
-            "./style.css", // Path to CSS file
+            "/home/naman/projects/myShell-gui/V1.0/style.css", // Path to CSS file
             NULL
-        );
+        );  
 
     // Style Context for overriding default styles
     GtkStyleContext *context = gtk_widget_get_style_context(headerbar);
@@ -294,7 +382,7 @@ int main(int argc, char *argv[]) {
 
     // Connect the activate signal to the callback for Enter key presses
     g_signal_connect(command_entry, "activate", G_CALLBACK(on_command_entry_activate), NULL);
-    //g_signal_connect(Std_input, "activate", G_CALLBACK(on_stdin_command_button_clicked), NULL);
+    g_signal_connect(stdin_entry, "activate", G_CALLBACK(on_stdin_button_activate), NULL);
 
     
 
