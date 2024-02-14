@@ -15,7 +15,7 @@ These instructions will help you quickly set up your myShell development environ
 
 1. Open a terminal window.
 
-2. Install the gcc and gtk3 on `Debian/Ubantu` Distribution by entering the following command:
+2a. Install the gcc and gtk3 on `Debian/Ubantu` Distribution by entering the following command:
 
    ```shell
     sudo apt install build-essential
@@ -23,7 +23,7 @@ These instructions will help you quickly set up your myShell development environ
     sudo apt-get install libgtk-3-dev
     gtk-launch --version
 
-3. Install the gcc and gtk3 on `Fedora/Redhat` Distribution by entering the following command:
+2b. Install the gcc and gtk3 on `Fedora/Redhat` Distribution by entering the following command:
 
    ```shell
     sudo dnf install gcc
