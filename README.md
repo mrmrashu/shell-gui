@@ -1,21 +1,21 @@
-# myShell (Beta)
+# myShell (Beta)(1.0)
 ### A Simple & Minimalistic command line shell for Linux, focusing on ease of use, productivity and user-centered design.
 Written using C & GTK, The Shell currently provides basic Commands that require printing and background processing. commands like `cd` that require access to file system are also available. 
 
 ## Getting Started
 
-These instructions will help you quickly set up your myShell development environment. Before you begin, ensure you have `GTK` and `gcc` installed on your system. or By following the steps below, you'll be ready to contribute to and experiment with myShell, as it takes shape in its early development stages.
+These instructions will help you quickly set up your myShell development environment. Before you begin, ensure you have `GTK` and `gcc` installed on your system or By following the steps below. you'll be ready to contribute to and experiment with myShell, as it takes shape in its early development stages.
 
 ### Prerequisites
 
 - GTK: [https://www.gtk.org/docs/installations/linux](https://www.gtk.org/docs/installations/linux)
 - gcc: 
 
-## Setting up Nightly Rust and Moonlight OS
+## Setting up GTK and gcc 
 
 1. Open a terminal window.
 
-2a. Install the gcc and gtk3 on `Debian/Ubantu` Distribution by entering the following command:
+2. Install the gcc and gtk3 on `Debian/Ubantu` Distribution by entering the following command:
 
    ```shell
     sudo apt install build-essential
@@ -23,7 +23,7 @@ These instructions will help you quickly set up your myShell development environ
     sudo apt-get install libgtk-3-dev
     gtk-launch --version
 
-2b. Install the gcc and gtk3 on `Fedora/Redhat` Distribution by entering the following command:
+3. Install the gcc and gtk3 on `Fedora/Redhat` Distribution by entering the following command:
 
    ```shell
     sudo dnf install gcc
